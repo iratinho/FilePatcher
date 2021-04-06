@@ -27,6 +27,14 @@
 *.lib
 
 # Executables
-*.exe
 *.out
 *.app
+
+# Generated folders
+Intermediate/*
+Binaries/*
+
+# IDE
+_ReSharper.Caches/*
+.idea/*
+*.sln
