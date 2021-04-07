@@ -10,12 +10,12 @@ using BYTE = char;
 
 struct Data
 {
-	Data(BYTE* offset, BYTE* value)
+	Data(const BYTE& offset, std::vector<BYTE>&& value)
 		: m_offset(offset)
 		, m_value(value) {}
 	
-	BYTE* m_offset;
-	BYTE* m_value;
+	BYTE m_offset;
+	std::vector<BYTE> m_value;
 };
 
 int main(int argc, char* argv[])
@@ -36,7 +36,15 @@ int main(int argc, char* argv[])
 
 		for (auto& element : json_document["data"].GetArray())
 		{
-			Data&& newData = Data(element["offset"].GetString(), element["value"].GetString());
+			const BYTE& start_offset = std::stoul(element["start_offset"].GetString(), nullptr, 16);
+			std::vector<BYTE>&& byte_values = std::vector<BYTE>();
+
+			const auto& values = element["values"].GetArray();
+
+			for (int i = 0; i < values.Size(); ++i)
+				byte_values.push_back(std::stoul(values[i].GetString(), nullptr, 16));
+			
+			const Data& newData = Data(start_offset, std::move(byte_values));
 			data.push_back(newData);
 		}
 	}

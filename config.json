@@ -2,19 +2,8 @@
     "replace":true,
     "data":[
        {
-          "offset":"0xAD",
-          "value":"0x00"
-       },
-       {
           "start_offset":"0xAD1",
-          "value":[
-             "0x00",
-             "0x01"
-          ]
-       },
-       {
-          "start_offset":"0xAD1",
-          "value":[
+          "values":[
              "0x00",
              "0x01"
           ]
