@@ -5,8 +5,6 @@
 
 #include "libs/rapidjson/document.h"
 
-#define PATCHED_IDENTIFIER "_patched"
-
 using BYTE = char;
 
 struct Data
@@ -22,6 +20,8 @@ struct Data
 int main(int argc, char* argv[])
 {
 	std::vector<Data> data;
+
+	bool bBackup = true;
 	
 	// Read config file
 	rapidjson::Document json_document;
@@ -35,6 +35,8 @@ int main(int argc, char* argv[])
 
 		json_document.Parse(buffer.str().c_str());
 
+		bBackup = json_document["backup"].GetBool();
+		
 		for (auto& element : json_document["data"].GetArray())
 		{
 			const BYTE& start_offset = std::stoul(element["start_offset"].GetString(), nullptr, 16);
@@ -53,10 +55,19 @@ int main(int argc, char* argv[])
 	const std::filesystem::path& path = std::filesystem::path(argv[argc-1]);
 	const std::string& file_name = path.stem().string(); 
 	const std::string& extension = path.extension().string();
-	
-	std::ifstream file_to_patch(path, std::fstream::binary);
+
+	std::ifstream file_to_patch(path, std::ifstream::binary);
 	std::stringstream buffer;
 	buffer << file_to_patch.rdbuf();
+	
+	if(bBackup)
+	{
+		file_to_patch.seekg(0);
+		
+		const std::string& backup_file_name = (file_name + extension + ".bak").c_str();
+		std::ofstream backup_file(backup_file_name.c_str(), std::ostream::binary);
+		backup_file << file_to_patch.rdbuf();
+	}
 
 	for (const auto& element : data)
 	{
@@ -70,8 +81,8 @@ int main(int argc, char* argv[])
 		buffer.seekp(0);
 	}
 
-	const std::string& patched_file_name = (file_name + PATCHED_IDENTIFIER + extension).c_str();
-	std::ofstream patched_file(patched_file_name.c_str(), std::fstream::binary);
+	const std::string& patched_file_name = (file_name + extension).c_str();
+	std::ofstream patched_file(patched_file_name.c_str(), std::ostream::binary);
 	patched_file << buffer.rdbuf();
 
 	return 0;
