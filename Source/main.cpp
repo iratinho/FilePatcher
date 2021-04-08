@@ -1,5 +1,6 @@
 ﻿#include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <sstream>
 
 #include "libs/rapidjson/document.h"
@@ -11,10 +12,10 @@ using BYTE = char;
 struct Data
 {
 	Data(const BYTE& offset, std::vector<BYTE>&& value)
-		: m_offset(offset)
+		: m_start_offset(offset)
 		, m_value(value) {}
 	
-	BYTE m_offset;
+	BYTE m_start_offset;
 	std::vector<BYTE> m_value;
 };
 
@@ -31,7 +32,7 @@ int main(int argc, char* argv[])
 
 		std::stringstream buffer;
 		buffer << config_file.rdbuf();
-		
+
 		json_document.Parse(buffer.str().c_str());
 
 		for (auto& element : json_document["data"].GetArray())
@@ -42,30 +43,41 @@ int main(int argc, char* argv[])
 			const auto& values = element["values"].GetArray();
 
 			for (int i = 0; i < values.Size(); ++i)
-				byte_values.push_back(std::stoul(values[i].GetString(), nullptr, 16));
+				byte_values.push_back(std::stoi(values[i].GetString(), nullptr, 16));
 			
 			const Data& newData = Data(start_offset, std::move(byte_values));
 			data.push_back(newData);
 		}
 	}
 	
-	const std::filesystem::path path = std::filesystem::path(argv[argc-1]);
+	const std::filesystem::path& path = std::filesystem::path(argv[argc-1]);
 	const std::string& file_name = path.stem().string(); 
 	const std::string& extension = path.extension().string();
 	
-	std::string&& patched_file_name = (file_name + PATCHED_IDENTIFIER + extension).c_str();
-	std::ofstream patched_file(patched_file_name.c_str(), std::fstream::binary);
-
 	std::ifstream file_to_patch(path, std::fstream::binary);
-	file_to_patch.seekg(0, std::ios::end);
-	const size_t bytes_to_read = file_to_patch.tellg();
-	file_to_patch.seekg(0, std::ios::beg);
+	std::stringstream buffer;
+	buffer << file_to_patch.rdbuf();
 
-	for (auto current_offset = 0; current_offset < bytes_to_read; ++current_offset)
+	for (const auto& element : data)
 	{
-		BYTE byte = file_to_patch.get();
-		patched_file.write(reinterpret_cast<BYTE*>(&byte), sizeof(BYTE));
+		const BYTE& start_offset = element.m_start_offset;
+		const BYTE& end_offset = element.m_start_offset + element.m_value.size();
+
+		// TODO: Can we avoid creating a string to modify values and modify the buffer directly?
+		// Modify the buffer data with new values
+		std::string&& buffer_str = buffer.str();
+		buffer_str.replace(start_offset,end_offset, element.m_value.data());
+
+		// Clean the stringstream buffer
+		buffer.str("");
+
+		// Insert the updated content into the buffer
+		buffer << buffer_str;
 	}
+
+	const std::string& patched_file_name = (file_name + PATCHED_IDENTIFIER + extension).c_str();
+	std::ofstream patched_file(patched_file_name.c_str(), std::fstream::binary);
+	patched_file << buffer.rdbuf();
 
 	return 0;
 }
