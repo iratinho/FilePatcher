@@ -39,8 +39,8 @@ int main(int argc, char* argv[])
 		
 		for (auto& element : json_document["data"].GetArray())
 		{
-			const BYTE& start_offset = std::stoul(element["start_offset"].GetString(), nullptr, 16);
-			std::vector<BYTE>&& byte_values = std::vector<BYTE>();
+			const BYTE& start_offset = std::stoi(element["start_offset"].GetString(), nullptr, 16);
+			std::vector<BYTE> byte_values;
 
 			const auto& values = element["values"].GetArray();
 
