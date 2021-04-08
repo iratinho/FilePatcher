@@ -1,6 +1,5 @@
 ﻿#include <filesystem>
 #include <fstream>
-#include <iostream>
 #include <sstream>
 
 #include "libs/rapidjson/document.h"
@@ -17,46 +16,54 @@ struct Data
 	std::vector<BYTE> m_value;
 };
 
-int main(int argc, char* argv[])
+void ParseConfig(const std::filesystem::path& config_path, std::vector<Data>& data, bool& bBackup)
 {
-	std::vector<Data> data;
-
-	bool bBackup = true;
-	
 	// Read config file
 	rapidjson::Document json_document;
-	const std::filesystem::path config_path("C:\\Sandbox\\FilePatcher\\config.json");
-	if(std::filesystem::exists(config_path))
-	{
-		std::ifstream config_file(config_path);
+	std::ifstream config_file(config_path);
 
-		std::stringstream buffer;
-		buffer << config_file.rdbuf();
+	std::stringstream json_buffer;
+	json_buffer << config_file.rdbuf();
 
-		json_document.Parse(buffer.str().c_str());
+	json_document.Parse(json_buffer.str().c_str());
 
-		bBackup = json_document["backup"].GetBool();
+	bBackup = json_document["backup"].GetBool();
 		
-		for (auto& element : json_document["data"].GetArray())
-		{
-			const BYTE& start_offset = std::stoi(element["start_offset"].GetString(), nullptr, 16);
-			std::vector<BYTE> byte_values;
+	for (auto& element : json_document["data"].GetArray())
+	{
+		const BYTE& start_offset = std::stoi(element["start_offset"].GetString(), nullptr, 16);
+		std::vector<BYTE> byte_values;
 
-			const auto& values = element["values"].GetArray();
+		const auto& values = element["values"].GetArray();
 
-			for (int i = 0; i < values.Size(); ++i)
-				byte_values.push_back(std::stoi(values[i].GetString(), nullptr, 16));
+		for (int i = 0; i < values.Size(); ++i)
+			byte_values.push_back(std::stoi(values[i].GetString(), nullptr, 16));
 			
-			const Data& newData = Data(start_offset, std::move(byte_values));
-			data.push_back(newData);
-		}
-	}
-	
-	const std::filesystem::path& path = std::filesystem::path(argv[argc-1]);
-	const std::string& file_name = path.stem().string(); 
-	const std::string& extension = path.extension().string();
+		const Data& newData = Data(start_offset, std::move(byte_values));
+		data.push_back(newData);
+	}	
+}
 
-	std::ifstream file_to_patch(path, std::ifstream::binary);
+int main(int argc, char* argv[])
+{
+	// No arg provided, only the default module name
+	if(argc == 1)
+		return 1;	
+
+	const std::filesystem::path& file_to_patch_path = std::filesystem::path(argv[argc-1]);
+	const std::filesystem::path config_path("config.json");
+
+	if(!std::filesystem::exists(file_to_patch_path) || !std::filesystem::exists(config_path))
+		return 1;
+
+	bool bBackup = true;
+	std::vector<Data> data;
+	ParseConfig(config_path, data, bBackup);
+	
+	const std::string& file_name = file_to_patch_path.stem().string(); 
+	const std::string& extension = file_to_patch_path.extension().string();
+
+	std::ifstream file_to_patch(file_to_patch_path, std::ifstream::binary);
 	std::stringstream buffer;
 	buffer << file_to_patch.rdbuf();
 	
