@@ -61,18 +61,13 @@ int main(int argc, char* argv[])
 	for (const auto& element : data)
 	{
 		const BYTE& start_offset = element.m_start_offset;
-		const BYTE& end_offset = element.m_start_offset + element.m_value.size();
 
-		// TODO: Can we avoid creating a string to modify values and modify the buffer directly?
-		// Modify the buffer data with new values
-		std::string&& buffer_str = buffer.str();
-		buffer_str.replace(start_offset,end_offset, element.m_value.data());
+		buffer.seekp(start_offset);
 
-		// Clean the stringstream buffer
-		buffer.str("");
+		for (int i = 0; i < element.m_value.size(); ++i)
+			buffer.write(&element.m_value[i], 1);	
 
-		// Insert the updated content into the buffer
-		buffer << buffer_str;
+		buffer.seekp(0);
 	}
 
 	const std::string& patched_file_name = (file_name + PATCHED_IDENTIFIER + extension).c_str();
