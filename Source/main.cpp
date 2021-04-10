@@ -3,7 +3,7 @@
 #include <sstream>
 #include <Windows.h>
 
-#include "libs/rapidjson/document.h"
+#include "ThirdParty/rapidjson/document.h"
 
 struct Data
 {
