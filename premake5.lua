@@ -42,4 +42,8 @@ project "FilePatcher"
         "**.h"
     }
 
-
+    -- Copy the config to the exe file to make testing more easy
+    buildmessage 'Moving config file to module folder.'
+    postbuildcommands {
+        ("{COPY} %{wks.location}/config.json %{wks.location}/Binaries/" ..outputdir.. "/%{prj.name}")
+    }
