@@ -1,10 +1,9 @@
 ﻿#include <filesystem>
 #include <fstream>
 #include <sstream>
+#include <Windows.h>
 
 #include "libs/rapidjson/document.h"
-
-using BYTE = char;
 
 struct Data
 {
@@ -48,10 +47,15 @@ int main(int argc, char* argv[])
 {
 	// No arg provided, only the default module name
 	if(argc == 1)
-		return 1;	
+		return 1;
 
+	// Config lives in the same place as .exe, so we need to get the module path
+	TCHAR module_file_name[MAX_PATH]; 
+	::GetModuleFileName(nullptr, module_file_name, MAX_PATH);
+	const std::filesystem::path module_path(std::string(std::begin(module_file_name), std::end(module_file_name)));
+	
 	const std::filesystem::path& file_to_patch_path = std::filesystem::path(argv[argc-1]);
-	const std::filesystem::path config_path("config.json");
+	const std::filesystem::path config_path(module_path.parent_path().string() + "\\config.json");
 
 	if(!std::filesystem::exists(file_to_patch_path) || !std::filesystem::exists(config_path))
 		return 1;
@@ -83,7 +87,7 @@ int main(int argc, char* argv[])
 		buffer.seekp(start_offset);
 
 		for (int i = 0; i < element.m_value.size(); ++i)
-			buffer.write(&element.m_value[i], 1);	
+			buffer.write((char*)&element.m_value[i], 1);	
 
 		buffer.seekp(0);
 	}
