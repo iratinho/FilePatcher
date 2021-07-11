@@ -7,11 +7,11 @@
 
 struct Data
 {
-	Data(const BYTE& offset, std::vector<BYTE>&& value)
+	Data(const unsigned int& offset, std::vector<BYTE>&& value)
 		: m_start_offset(offset)
 		, m_value(value) {}
 	
-	BYTE m_start_offset;
+	unsigned int m_start_offset;
 	std::vector<BYTE> m_value;
 };
 
@@ -30,7 +30,7 @@ void ParseConfig(const std::filesystem::path& config_path, std::vector<Data>& da
 		
 	for (auto& element : json_document["data"].GetArray())
 	{
-		const BYTE& start_offset = std::stoi(element["start_offset"].GetString(), nullptr, 16);
+		const unsigned int& start_offset = std::stoul(element["start_offset"].GetString(), nullptr, 16);
 		std::vector<BYTE> byte_values;
 
 		const auto& values = element["values"].GetArray();
@@ -82,7 +82,7 @@ int main(int argc, char* argv[])
 
 	for (const auto& element : data)
 	{
-		const BYTE& start_offset = element.m_start_offset;
+		const unsigned int& start_offset = element.m_start_offset;
 
 		buffer.seekp(start_offset);
 
